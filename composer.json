@@ -1,0 +1,6 @@
+{
+    "require": {
+        "symfony/postmark-mailer": "^7.4",
+        "symfony/http-client": "^7.4"
+    }
+}
