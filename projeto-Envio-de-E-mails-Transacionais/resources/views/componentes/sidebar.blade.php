@@ -1,15 +1,16 @@
 <!-- Sidebar de Gerenciamento de Conta do Usuário -->
-<div class="card border-0 shadow-sm p-3 mb-4 h-100">
+<div class="card border-0 shadow-sm mb-4 h-100">
     <div class="card-body">
         
         <!-- Perfil Resumido -->
         <div class="d-flex align-items-center mb-4 pb-3 border-bottom">
-            <div class="bg-primary text-white rounded-circle d-flex align-items-center justify-content-center fw-bold me-3" style="width: 48px; height: 48px; font-size: 20px;">
+            <!-- Adicionado 'flex-shrink-0' para o círculo não amassar -->
+            <div class="bg-primary text-white rounded-circle d-flex align-items-center justify-content-center fw-bold me-3 flex-shrink-0" style="width: 48px; height: 48px; font-size: 20px;">
                 <i class="fa-solid fa-user"></i>
             </div>
-            <div>
-                <h6 class="fw-bold text-dark mb-0">usuário</h6>
-                <span class="text-muted small">usuário@gmail.com</span>
+            <div class="overflow-hidden">
+                <h6 class="fw-bold text-dark mb-0 text-truncate">{{ session('nome_usuario', 'Visitante') }}</h6>
+                <span class="text-muted small text-truncate d-block">{{ session('email_usuario') }}</span>
             </div>
         </div>
 
@@ -31,7 +32,12 @@
             <li class="mb-2"><a href="#" class="text-decoration-none text-dark small d-block py-1"><i class="fa-solid fa-rotate-right me-2"></i> Histórico / Devolver</a></li>
         </ul>
 
-        <!-- Seção: Finanças -->
-        <a href="login"><i class="fa-solid fa-right-from-bracket me-2"></i> Logout</a>
+        <!-- Botão de Logout -->
+        <div class="border-top pt-3">
+            <a href="{{ route('logout') }}" class="text-decoration-none text-danger small d-block py-1 fw-bold">
+                <i class="fa-solid fa-right-from-bracket me-2"></i> Logout
+            </a>
+        </div>
+
     </div>
 </div>
