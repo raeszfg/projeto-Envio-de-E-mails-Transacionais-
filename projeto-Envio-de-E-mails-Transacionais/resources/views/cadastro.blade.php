@@ -4,8 +4,8 @@
 <div class="container d-flex justify-content-center align-items-center vh-100">
     <div class="card shadow p-4" style="width: 100%; max-width: 400px;">
         <h2 class="text-center mb-4 text-dark">Cadastro</h2>
-        
-        <form action="#" method="POST">
+        <!-- Colocar post -->
+        <form action="home-page"  >
             @csrf
             <div class="mb-3">
                 <label for="nome" class="form-label">Nome Completo</label>
@@ -23,6 +23,8 @@
             </div>
 
             <button type="submit" class="btn btn-primary w-100">Cadastrar</button>
+            <br></br>
+            <p>Já tem uma conta? <a href="login">Clique Aqui</a></p>
         </form>
     </div>
 </div>
