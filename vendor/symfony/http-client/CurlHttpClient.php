@@ -41,10 +41,13 @@ final class CurlHttpClient implements HttpClientInterface, LoggerAwareInterface,
     ];
 
     private array $defaultOptions = self::OPTIONS_DEFAULTS + [
-        'auth_ntlm' => null, // array|string - an array containing the username as first value, and optionally the
-        //   password as the second one; or string like username:password - enabling NTLM auth
+        // array|string - an array containing the username as first value, and optionally the
+        //  password as the second one; or string like username:password - enabling NTLM auth
+        'auth_ntlm' => null,
         'extra' => [
-            'curl' => [],    // A list of extra curl options indexed by their corresponding CURLOPT_*
+            'use_persistent_connections' => false,
+            // A list of extra curl options indexed by their corresponding CURLOPT_*
+            'curl' => [],
         ],
     ];
     private static array $emptyDefaults = self::OPTIONS_DEFAULTS + ['auth_ntlm' => null];
@@ -296,6 +299,10 @@ final class CurlHttpClient implements HttpClientInterface, LoggerAwareInterface,
             $curlopts[\CURLOPT_TIMEOUT_MS] = 1000 * $options['max_duration'];
         }
 
+        if (0 < $options['max_connect_duration']) {
+            $curlopts[\CURLOPT_CONNECTTIMEOUT_MS] = ceil(1000 * $options['max_connect_duration']);
+        }
+
         if (!empty($options['extra']['curl']) && \is_array($options['extra']['curl'])) {
             $this->validateExtraCurlOptions($options['extra']['curl']);
             $curlopts += $options['extra']['curl'];
@@ -320,7 +327,7 @@ final class CurlHttpClient implements HttpClientInterface, LoggerAwareInterface,
         if (!$pushedResponse) {
             $ch = curl_init();
             $this->logger?->info(\sprintf('Request: "%s %s"', $method, $url));
-            $curlopts += [\CURLOPT_SHARE => $this->multi->share];
+            $curlopts += [\CURLOPT_SHARE => ($options['extra']['use_persistent_connections'] ?? false) ? $this->multi->persistentShare : $this->multi->share];
         }
 
         foreach ($curlopts as $opt => $value) {
@@ -389,6 +396,8 @@ final class CurlHttpClient implements HttpClientInterface, LoggerAwareInterface,
 
     /**
      * Wraps the request's body callback to allow it to return strings longer than curl requested.
+     *
+     * @param-immediately-invoked-callable $body
      */
     private static function readRequestBody(int $length, \Closure $body, string &$buffer, bool &$eof): string
     {
@@ -515,6 +524,8 @@ final class CurlHttpClient implements HttpClientInterface, LoggerAwareInterface,
             \CURLOPT_INTERFACE => 'bindto',
             \CURLOPT_TIMEOUT_MS => 'max_duration',
             \CURLOPT_TIMEOUT => 'max_duration',
+            \CURLOPT_CONNECTTIMEOUT_MS => 'max_connect_duration',
+            \CURLOPT_CONNECTTIMEOUT => 'max_connect_duration',
             \CURLOPT_MAXREDIRS => 'max_redirects',
             \CURLOPT_POSTREDIR => 'max_redirects',
             \CURLOPT_PROXY => 'proxy',
@@ -553,8 +564,6 @@ final class CurlHttpClient implements HttpClientInterface, LoggerAwareInterface,
             \CURLOPT_URL,
             \CURLOPT_FOLLOWLOCATION,
             \CURLOPT_HEADER,
-            \CURLOPT_CONNECTTIMEOUT,
-            \CURLOPT_CONNECTTIMEOUT_MS,
             \CURLOPT_HTTP_VERSION,
             \CURLOPT_PORT,
             \CURLOPT_DNS_USE_GLOBAL_CACHE,

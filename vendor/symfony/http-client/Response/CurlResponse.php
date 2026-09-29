@@ -72,6 +72,7 @@ final class CurlResponse implements ResponseInterface, StreamableInterface
         $this->info['http_method'] = $method;
         $this->info['user_data'] = $options['user_data'] ?? null;
         $this->info['max_duration'] = $options['max_duration'] ?? null;
+        $this->info['max_connect_duration'] = $options['max_connect_duration'] ?? null;
         $this->info['start_time'] ??= microtime(true);
         $this->info['original_url'] = $originalUrl ?? $this->info['url'] ?? curl_getinfo($ch, \CURLINFO_EFFECTIVE_URL);
         $info = &$this->info;
@@ -146,19 +147,18 @@ final class CurlResponse implements ResponseInterface, StreamableInterface
             });
         }
 
-        curl_setopt($ch, \CURLOPT_WRITEFUNCTION, static function ($ch, string $data) use ($multi, $id): int {
-            if ('H' === (curl_getinfo($ch, \CURLINFO_PRIVATE)[0] ?? null)) {
-                $multi->handlesActivity[$id][] = null;
-                $multi->handlesActivity[$id][] = new TransportException(\sprintf('Unsupported protocol for "%s"', curl_getinfo($ch, \CURLINFO_EFFECTIVE_URL)));
+        $checkProtocol = true;
+        curl_setopt($ch, \CURLOPT_WRITEFUNCTION, static function ($ch, string $data) use ($multi, $id, &$checkProtocol): int {
+            if ($checkProtocol) {
+                if ('H' === (curl_getinfo($ch, \CURLINFO_PRIVATE)[0] ?? null)) {
+                    $multi->handlesActivity[$id][] = null;
+                    $multi->handlesActivity[$id][] = new TransportException(\sprintf('Unsupported protocol for "%s"', curl_getinfo($ch, \CURLINFO_EFFECTIVE_URL)));
 
-                return 0;
+                    return 0;
+                }
+
+                $checkProtocol = false;
             }
-
-            curl_setopt($ch, \CURLOPT_WRITEFUNCTION, static function ($ch, string $data) use ($multi, $id): int {
-                $multi->handlesActivity[$id][] = $data;
-
-                return \strlen($data);
-            });
 
             $multi->handlesActivity[$id][] = $data;
 
@@ -379,6 +379,8 @@ final class CurlResponse implements ResponseInterface, StreamableInterface
 
     /**
      * Parses header lines as curl yields them to us.
+     *
+     * @param-immediately-invoked-callable $resolveRedirect
      */
     private static function parseHeaderLine($ch, string $data, array &$info, array &$headers, ?array $options, CurlClientState $multi, int $id, ?string &$location, ?callable $resolveRedirect, ?LoggerInterface $logger): int
     {
